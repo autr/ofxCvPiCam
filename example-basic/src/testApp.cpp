@@ -9,6 +9,7 @@ void testApp::setup(){
     gui.setup("PiCam settings");
     gui.setPosition(0,0);
     gui.setWidthElements(200);
+    gui.add(shutterSpeed.set("shutter speed",0,0,330000));//(in micro seconds)
     gui.add(saturation.set("saturation",0,-100,100));
     gui.add(sharpness.set("sharpness",0,-100,100));
     gui.add(contrast.set("contrast",0,-100,100));
@@ -17,7 +18,6 @@ void testApp::setup(){
     gui.add(exposureCompensation.set("exposure compensation",0,-10,10));
     gui.add(exposureMeteringMode.set("exposure metering mode",0,0,4));
     gui.add(exposureMode.set("exposure mode",0,0,13));
-    gui.add(shutterSpeed.set("shutter speed",0,0,330000));//(in micro seconds)
     gui.add(awbMode.set("AutoWhiteBalance mode",0,0,10));
     gui.add(awbGainR.set("AutoWhiteBalance Rgain",0,0,1));
     gui.add(awbGainB.set("AutoWhiteBalance Bgain",0,0,1));
@@ -35,6 +35,7 @@ void testApp::setup(){
     guiXtra.add(roiH.set("ROI h",1,0,1));
     guiXtra.add(imageFX.set("image effect",0,0,23));
 
+    shutterSpeed.addListener(this,&testApp::shutterSpeedChanged);
     saturation.addListener(this,&testApp::saturationChanged);
     sharpness.addListener(this,&testApp::sharpnessChanged);
     contrast.addListener(this,&testApp::contrastChanged);
@@ -121,6 +122,7 @@ void testApp::update(){
     if (cam.isFrameNew()) {
         frame = cam.grab();
 	if ( !tex.isAllocated() || ( ( tex.getWidth() != frame.getWidth() ) || ( tex.getHeight() != frame.getHeight() ) ) ) {
+        ofLog() << "allocated texture";
 		tex.allocate( frame.getWidth(), frame.getHeight(), GL_RGB);
 	}	
         tex.loadData( frame );
@@ -129,12 +131,16 @@ void testApp::update(){
 
 //--------------------------------------------------------------
 void testApp::draw(){
-    if (tex.isAllocated()) tex.draw(0,0);
+    ofImage img;
+    img.setFromPixels( cam.grab() );
+    img.draw(0,0,ofGetWidth(),ofGetHeight());
+    // if (tex.isAllocated()) tex.draw(0,0);
     gui.draw();
     guiXtra.draw();
 }
 
 //settings
+
 void testApp::saturationChanged(int &value){
     cam.setSaturation(value);
 }

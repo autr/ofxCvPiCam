@@ -47,6 +47,8 @@ static void color_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) {
     unsigned char* pointer = (unsigned char *)(buffer -> data);
     
     ofxPiCam::image->setFromPixels( pointer, ofxPiCam::width, ofxPiCam::height, 3);
+    ofxPiCam::image->swapRgb();
+
 #ifdef OFXADDON_OFXCV
     ofxPiCam::set_image(Mat(ofxPiCam::height, ofxPiCam::width, CV_8UC3, pointer));
 #endif
@@ -317,6 +319,15 @@ int ofxPiCam::setRotation(int rotation){
     
     return ret;
 }
+
+
+int ofxPiCam::setShutterSpeed(int speed){
+    if (!camera)
+        return 1;
+    
+    return mmal_status_to_int(mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_SHUTTER_SPEED, speed));
+}
+
 int ofxPiCam::setFlips(int hflip, int vflip){
     MMAL_PARAMETER_MIRROR_T mirror = {{MMAL_PARAMETER_MIRROR, sizeof(MMAL_PARAMETER_MIRROR_T)}, MMAL_PARAM_MIRROR_NONE};
     
@@ -346,12 +357,6 @@ int ofxPiCam::setROI(ofRectangle rect){
     crop.rect.height = (65536 * rect.height);
     
     return mmal_port_parameter_set(camera->control, &crop.hdr);
-}
-int ofxPiCam::setShutterSpeed(int speed){
-    if (!camera)
-        return 1;
-    
-    return mmal_status_to_int(mmal_port_parameter_set_uint32(camera->control, MMAL_PARAMETER_SHUTTER_SPEED, speed));
 }
 //*/
 

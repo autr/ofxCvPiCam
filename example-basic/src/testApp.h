@@ -15,6 +15,7 @@ class testApp : public ofBaseApp{
         ofxPiCam cam;
 
         ofxPanel gui,guiXtra;
+        ofParameter<int> shutterSpeed;
         ofParameter<int> saturation;
         ofParameter<int> sharpness;
         ofParameter<int> contrast;
@@ -47,6 +48,7 @@ class testApp : public ofBaseApp{
         string awbModes[11];
         string imageFXLabels[24];
 
+        void shutterSpeedChanged(int &value);
         void saturationChanged(int &value);
         void sharpnessChanged(int &value);
         void contrastChanged(int &value);

@@ -156,6 +156,7 @@ public:
      * @param rotation (0,359) try 0,90,180,270
      * @return
      */
+
     int setRotation(int rotation);
     /**
      * @brief setFlips
