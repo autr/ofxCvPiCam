@@ -9,6 +9,8 @@
 
 #include "ofMain.h"
 
+#ifdef TARGET_RASPBERRY_PI
+
 #include "interface/mmal/mmal.h"
 #include "interface/mmal/mmal_logging.h"
 #include "interface/mmal/mmal_buffer.h"
@@ -17,6 +19,20 @@
 #include "interface/mmal/util/mmal_util_params.h"
 #include "interface/mmal/util/mmal_default_components.h"
 #include "interface/mmal/util/mmal_connection.h"
+
+#else
+enum {
+    MMAL_PARAMETER_SATURATION,
+    MMAL_PARAMETER_SHARPNESS,
+    MMAL_PARAMETER_CONTRAST,
+    MMAL_PARAMETER_BRIGHTNESS,
+    MMAL_PARAMETER_SHUTTER_SPEED,
+    MMAL_PARAMETER_ISO,
+    MMAL_PARAMETER_VIDEO_STABILISATION,
+    MMAL_PARAMETER_EXPOSURE_COMP
+};
+
+#endif
 
 #ifdef OFXADDON_OFXCV
     #include <opencv2/opencv.hpp>
@@ -95,7 +111,6 @@ public:
     static bool newFrame;
 
     static int width, height;
-    static MMAL_POOL_T *camera_video_port_pool;
     
     // ofxCv
     
@@ -104,38 +119,12 @@ public:
 
     ofPixels & grab() { newFrame = false; return *image; }
 
-    // labels...
 
-    string exposureModeLabels[14];
-    string exposureMeteringModeLabels[5];
-    string awbModeLabels[12];
-    string imageFXLabelLabels[24];
-    string drcModeLabels[5];
-    string flickerAvoidModeLabels[5];
-
-    void initLabels();
-
-    // mmal mode calls...
-
-    void initParameters();
-
-    int setImageFX(int & v);
-    int setColourFX(ofVec2f & v);
-    int setAWBGains( ofVec2f & v);
-    int setROI(ofVec4f & rect);
-    int setFlips( bool & b );
-    int setRotation(int & v);
-    int setUInt32(int parameterEnum, int & v);
-    int setInt32(int parameterEnum, int & v);
-    int setRationalInt(int parameterEnum, int & v);
-    int setBoolean(int parameterEnum, bool & b);
-    int setExposureMode(int & v);
-    int setExposureMeteringMode(int & v);
-    int setAWBMode(int & v);
-    int setFlickerAvoidMode(int & v);
-
+#ifdef TARGET_RASPBERRY_PI
+    static MMAL_POOL_T *camera_video_port_pool;
     int mmal_status_to_int(MMAL_STATUS_T status)
     {
+        
        if (status == MMAL_SUCCESS)
           return 0;
        else
@@ -163,8 +152,43 @@ public:
           return 1;
        }
     }
+#endif
     //*/
+    bool isReceiving = false;
+    
 private:
+  
+    // labels...
+    
+
+    string exposureModeLabels[14];
+    string exposureMeteringModeLabels[5];
+    string awbModeLabels[12];
+    string imageFXLabelLabels[24];
+    string drcModeLabels[5];
+    string flickerAvoidModeLabels[5];
+
+    void initLabels();
+
+    // mmal mode calls...
+
+    void initParameters();
+
+    void setImageFX(int & v);
+    void setColourFX(ofVec2f & v);
+    void setAWBGains( ofVec2f & v);
+    void setROI(ofVec4f & rect);
+    void setFlips( bool & b );
+    void setRotation(int & v);
+    void setUInt32(int parameterEnum, int & v);
+    void setInt32(int parameterEnum, int & v);
+    void setRationalInt(int parameterEnum, int & v);
+    void setBoolean(int parameterEnum, bool & b);
+    void setExposureMode(int & v);
+    void setExposureMeteringMode(int & v);
+    void setAWBMode(int & v);
+    void setFlickerAvoidMode(int & v);
+#ifdef TARGET_RASPBERRY_PI
     bool color;
     MMAL_COMPONENT_T *camera;
     MMAL_COMPONENT_T *preview;
@@ -173,8 +197,11 @@ private:
     MMAL_PORT_T *camera_preview_port, *camera_video_port, *camera_still_port;
     MMAL_PORT_T *preview_input_port;
     MMAL_CONNECTION_T *camera_preview_connection;
+#endif
 
 };
 
+#ifdef TARGET_RASPBERRY_PI
 static void color_callback(MMAL_PORT_T *, MMAL_BUFFER_HEADER_T *);
 static void gray_callback(MMAL_PORT_T *, MMAL_BUFFER_HEADER_T *);
+#endif

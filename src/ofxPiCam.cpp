@@ -4,16 +4,16 @@ using namespace std;
 
 int ofxPiCam::width = 0;
 int ofxPiCam::height = 0;
-
-MMAL_POOL_T * ofxPiCam::camera_video_port_pool = NULL;
 ofPixels * ofxPiCam::image = new ofPixels();
+bool ofxPiCam::newFrame = false;
 
 #ifdef OFXADDON_OFXCV
 Mat ofxPiCam::cvImage = Mat();
 #endif
 
-bool ofxPiCam::newFrame = false;
+#ifdef TARGET_RASPBERRY_PI
 
+MMAL_POOL_T * ofxPiCam::camera_video_port_pool = NULL;
 static void gray_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) {
     MMAL_BUFFER_HEADER_T *new_buffer;
     mmal_buffer_header_mem_lock(buffer);
@@ -26,6 +26,7 @@ static void gray_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) {
 #ifdef OFXADDON_OFXCV
     ofxPiCam::set_image(Mat(ofxPiCam::height, ofxPiCam::width, CV_8UC1, pointer));
 #endif
+    if (!isReceiving) isReceiving = true;
     
     mmal_buffer_header_release(buffer);
     if (port->is_enabled) {
@@ -48,6 +49,7 @@ static void color_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) {
     
     ofxPiCam::image->setFromPixels( pointer, ofxPiCam::width, ofxPiCam::height, 3);
     ofxPiCam::image->swapRgb();
+    if (!isReceiving) isReceiving = true;
 
 #ifdef OFXADDON_OFXCV
     ofxPiCam::set_image(Mat(ofxPiCam::height, ofxPiCam::width, CV_8UC3, pointer));
@@ -63,9 +65,16 @@ static void color_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) {
             ofLogVerbose() << ("Unable to return a buffer to the video port\n");
     }
 }
+
+#endif
+
 void ofxPiCam::setup(int _w,int _h,bool _color)
 {
+    
     initLabels();
+    initParameters();
+    
+#ifdef TARGET_RASPBERRY_PI
     color = _color;
     width = _w;
     height = _h;
@@ -150,6 +159,10 @@ void ofxPiCam::setup(int _w,int _h,bool _color)
         ofLog(OF_LOG_ERROR, "Failed to start capture");
     }
     ofLogVerbose() << "Capture started" << endl;
+#else
+    ofLogNotice("ofxPiCam") << "is not being initialised; use ofVideoGrabber instead.";
+    
+#endif
 }
 void close() {
 
@@ -194,10 +207,10 @@ void ofxPiCam::initParameters() {
     groupA.add(awbMode.set("autoWhiteBalanceMode",0,0,10));
     groupA.add( awbGains.set("awbGains", ofVec2f(0,0), ofVec2f(0,0), ofVec2f(1,1)));
 
-    saturation.addListener([this](int & v){ setRationalInt( MMAL_PARAMETER_SATURATION, v ); });
-    sharpness.addListener([this](int & v){ setRationalInt( MMAL_PARAMETER_SHARPNESS, v ); });
-    contrast.addListener([this](int & v){ setRationalInt( MMAL_PARAMETER_CONTRAST, v ); });
-    brightness.addListener([this](int & v){ setRationalInt( MMAL_PARAMETER_BRIGHTNESS, v ); });
+    saturation.newListener([this](int & v){ setRationalInt( MMAL_PARAMETER_SATURATION, v ); });
+    sharpness.newListener([this](int & v){ setRationalInt( MMAL_PARAMETER_SHARPNESS, v ); });
+    contrast.newListener([this](int & v){ setRationalInt( MMAL_PARAMETER_CONTRAST, v ); });
+    brightness.newListener([this](int & v){ setRationalInt( MMAL_PARAMETER_BRIGHTNESS, v ); });
     awbMode.addListener( this, &ofxPiCam::setAWBMode );
     awbGains.addListener( this, &ofxPiCam::setAWBGains);
 
@@ -209,10 +222,10 @@ void ofxPiCam::initParameters() {
     groupB.add(flickerAvoidMode.set("flickerAvoidMode", 0, 0, 2));
     groupB.add(exposureMeteringMode.set("exposureMeteringMode",0,0,4));
 
-    shutterSpeed.addListener([this](int & v){ setUInt32( MMAL_PARAMETER_SHUTTER_SPEED, v ); });
-    ISO.addListener([this](int & v){ setUInt32( MMAL_PARAMETER_ISO, v ); });
-    videoStabilise.addListener([this](bool & b){ setUInt32( MMAL_PARAMETER_VIDEO_STABILISATION, b ); });
-    exposureCompensation.addListener([this](int & v){ setInt32( MMAL_PARAMETER_EXPOSURE_COMP, v ); });
+    shutterSpeed.newListener([this](int & v){ setUInt32( MMAL_PARAMETER_SHUTTER_SPEED, v ); });
+    ISO.newListener([this](int & v){ setUInt32( MMAL_PARAMETER_ISO, v ); });
+    videoStabilise.newListener([this](bool & b){ setBoolean( MMAL_PARAMETER_VIDEO_STABILISATION, b ); });
+    exposureCompensation.newListener([this](int & v){ setInt32( MMAL_PARAMETER_EXPOSURE_COMP, v ); });
     exposureMode.addListener( this, &ofxPiCam::setExposureMode);
     flickerAvoidMode.addListener( this, &ofxPiCam::setFlickerAvoidMode );
     exposureMeteringMode.addListener( this, &ofxPiCam::setExposureMeteringMode );
@@ -246,20 +259,21 @@ void ofxPiCam::initParameters() {
 
 
 
+void ofxPiCam::setImageFX(int & v){
 
-int ofxPiCam::setImageFX(int & v){
-
+#ifdef TARGET_RASPBERRY_PI
     MMAL_PARAM_IMAGEFX_T imageFX = v;
     MMAL_PARAMETER_IMAGEFX_T imgFX = {{MMAL_PARAMETER_IMAGE_EFFECT,sizeof(imgFX)}, imageFX};
     
     if (!camera)
         return 1;
     
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &imgFX.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &imgFX.hdr));
+#endif
 }
-
-int ofxPiCam::setColourFX(ofVec2f & v)
+void ofxPiCam::setColourFX(ofVec2f & v)
 {
+#ifdef TARGET_RASPBERRY_PI
    MMAL_PARAMETER_COLOURFX_T colfx = {{MMAL_PARAMETER_COLOUR_EFFECT,sizeof(colfx)}, 0, 0, 0};
 
    if (!camera)
@@ -269,11 +283,12 @@ int ofxPiCam::setColourFX(ofVec2f & v)
    colfx.u = v.x;
    colfx.v = v.y;
 
-   return mmal_status_to_int(mmal_port_parameter_set(camera->control, &colfx.hdr));
+   mmal_status_to_int(mmal_port_parameter_set(camera->control, &colfx.hdr));
+#endif
 
 }
-
-int ofxPiCam::setAWBGains( ofVec2f & v){
+void ofxPiCam::setAWBGains( ofVec2f & v){
+#ifdef TARGET_RASPBERRY_PI
     MMAL_PARAMETER_AWB_GAINS_T param = {{MMAL_PARAMETER_CUSTOM_AWB_GAINS,sizeof(param)}, {0,0}, {0,0}};
     
     if (!camera)
@@ -282,10 +297,11 @@ int ofxPiCam::setAWBGains( ofVec2f & v){
     param.r_gain.num = (unsigned int)(v.x * 65536);
     param.b_gain.num = (unsigned int)(v.y * 65536);
     param.r_gain.den = param.b_gain.den = 65536;
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+#endif
 }
-
-int ofxPiCam::setROI(ofVec4f & rect){
+void ofxPiCam::setROI(ofVec4f & rect){
+#ifdef TARGET_RASPBERRY_PI
     MMAL_PARAMETER_INPUT_CROP_T crop = {{MMAL_PARAMETER_INPUT_CROP, sizeof(MMAL_PARAMETER_INPUT_CROP_T)}};
     if(rect.x < 0) rect.x = 0;if(rect.x > 1) rect.x = 1;
     if(rect.y < 0) rect.y = 0;if(rect.y > 1) rect.y = 1;
@@ -296,9 +312,10 @@ int ofxPiCam::setROI(ofVec4f & rect){
     crop.rect.width = (65536 * rect.z);
     crop.rect.height = (65536 * rect.w);
     
-    return mmal_port_parameter_set(camera->control, &crop.hdr);
-}
-int ofxPiCam::setFlips( bool & b ){
+    mmal_port_parameter_set(camera->control, &crop.hdr);
+#endif
+}void ofxPiCam::setFlips( bool & b ){
+#ifdef TARGET_RASPBERRY_PI
     MMAL_PARAMETER_MIRROR_T mirror = {{MMAL_PARAMETER_MIRROR, sizeof(MMAL_PARAMETER_MIRROR_T)}, MMAL_PARAM_MIRROR_NONE};
     
     if (flipHorz && flipVert)
@@ -312,46 +329,50 @@ int ofxPiCam::setFlips( bool & b ){
     
     mmal_port_parameter_set(camera->output[0], &mirror.hdr);
     mmal_port_parameter_set(camera->output[1], &mirror.hdr);
-    return mmal_port_parameter_set(camera->output[2], &mirror.hdr);
+    mmal_port_parameter_set(camera->output[2], &mirror.hdr);
+#endif
 }
-
-int ofxPiCam::setRotation(int & v){
+void ofxPiCam::setRotation(int & v){
+#ifdef TARGET_RASPBERRY_PI
     int ret;
     v *= 90;
     int my_rotation = ((v % 360 ) / 90) * 90;
     
-    ret = mmal_port_parameter_set_int32(camera->output[0], MMAL_PARAMETER_ROTATION, my_rotation);
+    mmal_port_parameter_set_int32(camera->output[0], MMAL_PARAMETER_ROTATION, my_rotation);
     mmal_port_parameter_set_int32(camera->output[1], MMAL_PARAMETER_ROTATION, my_rotation);
     mmal_port_parameter_set_int32(camera->output[2], MMAL_PARAMETER_ROTATION, my_rotation);
-    
-    return ret;
+#endif
 }
 
-
-int ofxPiCam::setUInt32(int parameterEnum, int & v) {
+void ofxPiCam::setUInt32(int parameterEnum, int & v) {
+#ifdef TARGET_RASPBERRY_PI
 
     if (!camera) return 1;
-    return mmal_status_to_int(mmal_port_parameter_set_uint32(camera->control, parameterEnum, v));
+    mmal_status_to_int(mmal_port_parameter_set_uint32(camera->control, parameterEnum, v));
+#endif
 }
-
-int ofxPiCam::setInt32(int parameterEnum, int & v) {
+void ofxPiCam::setInt32(int parameterEnum, int & v) {
+#ifdef TARGET_RASPBERRY_PI
 
     if (!camera) return 1;
-    return mmal_status_to_int(mmal_port_parameter_set_int32(camera->control, parameterEnum, v));
+    mmal_status_to_int(mmal_port_parameter_set_int32(camera->control, parameterEnum, v));
+#endif
 }
-
-int ofxPiCam::setRationalInt(int parameterEnum, int & v) {
+void ofxPiCam::setRationalInt(int parameterEnum, int & v) {
+#ifdef TARGET_RASPBERRY_PI
 
     if (!camera) return 1;
-    return mmal_status_to_int(mmal_port_parameter_set_rational(camera->control, parameterEnum, v));
-}
-int ofxPiCam::setBoolean(int parameterEnum, bool & b) {
+    mmal_status_to_int(mmal_port_parameter_set_rational(camera->control, parameterEnum, v));
+#endif
+}void ofxPiCam::setBoolean(int parameterEnum, bool & b) {
+#ifdef TARGET_RASPBERRY_PI
 
     if (!camera) return 1;
-    return mmal_status_to_int(mmal_port_parameter_set_boolean(camera->control, parameterEnum, v));
+    mmal_status_to_int(mmal_port_parameter_set_boolean(camera->control, parameterEnum, v));
+#endif
 }
-
-int ofxPiCam::setExposureMode(int & v){
+void ofxPiCam::setExposureMode(int & v){
+#ifdef TARGET_RASPBERRY_PI
 
     MMAL_PARAM_EXPOSUREMODE_T mode = (v == exposureMode.getMax()) ? MMAL_PARAM_EXPOSUREMODE_MAX : v;
     MMAL_PARAMETER_EXPOSUREMODE_T exp_mode = {{MMAL_PARAMETER_EXPOSURE_MODE,sizeof(exp_mode)}, mode};
@@ -359,10 +380,11 @@ int ofxPiCam::setExposureMode(int & v){
     if (!camera)
         return 1;
     
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &exp_mode.hdr));
+#endif
 }
-
-int ofxPiCam::setExposureMeteringMode(int & v){
+void ofxPiCam::setExposureMeteringMode(int & v){
+#ifdef TARGET_RASPBERRY_PI
 
 
     MMAL_PARAM_EXPOSUREMETERINGMODE_T mode = (v == exposureMeteringMode.getMax()) ? MMAL_PARAM_EXPOSUREMETERINGMODE_MAX : v;
@@ -371,10 +393,11 @@ int ofxPiCam::setExposureMeteringMode(int & v){
     if (!camera)
         return 1;
     
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &meter_mode.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &meter_mode.hdr));
+#endif
 }
-
-int ofxPiCam::setAWBMode(int & v){
+void ofxPiCam::setAWBMode(int & v){
+#ifdef TARGET_RASPBERRY_PI
     
     MMAL_PARAM_AWBMODE_T awb_mode = (v == awbMode.getMax()) ? MMAL_PARAM_AWBMODE_MAX : v;
     MMAL_PARAMETER_AWBMODE_T param = {{MMAL_PARAMETER_AWB_MODE,sizeof(param)}, awb_mode};
@@ -382,10 +405,11 @@ int ofxPiCam::setAWBMode(int & v){
     if (!camera)
         return 1;
     
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+#endif
 }
-
-int ofxPiCam::setFlickerAvoidMode(int & v){
+void ofxPiCam::setFlickerAvoidMode(int & v){
+#ifdef TARGET_RASPBERRY_PI
     
     MMAL_PARAM_FLICKERAVOID_T flicker_mode = (v == flickerAvoidMode.getMax()) ? MMAL_PARAM_FLICKERAVOID_MAX : v;
     MMAL_PARAMETER_FLICKERAVOID_T param = {{MMAL_PARAMETER_FLICKERAVOID_T,sizeof(param)}, flicker_mode};
@@ -393,7 +417,8 @@ int ofxPiCam::setFlickerAvoidMode(int & v){
     if (!camera)
         return 1;
     
-    return mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+    mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
+#endif
 }
 
 

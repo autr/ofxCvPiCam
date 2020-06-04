@@ -22,18 +22,22 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofImage img;
-    img.setFromPixels( cam.grab() );
-    int w = ofGetWidth();
-    int h = ofGetHeight();
-    int ww = w/2;
-    int hh = (ww/cam.width)*cam.height;
-    img.draw(0,0,ww,hh);
-    tex.draw(ww,0,ww,hh);
+    
+    if (cam.isReceiving) {
+        ofImage img;
+        img.setFromPixels( cam.grab() );
+        int w = ofGetWidth();
+        int h = ofGetHeight();
+        int ww = w/2;
+        int hh = (ww/cam.width)*cam.height;
+        img.draw(0,0,ww,hh);
+        tex.draw(ww,0,ww,hh);
+    }
     if (showGui) gui.draw();
 }
 
 void ofApp::setView( ofParameterGroup & g ) {
+    
     gui.clear();
     gui.setup( g );
 }
@@ -42,7 +46,7 @@ void ofApp::setView( ofParameterGroup & g ) {
 void ofApp::keyPressed  (int key){
     
     if (key == ' ') showGui = !showGui;
-
+    ofLog() << "KEY IS" << (char)key;
     if (key == '1') setView(cam.groupA);
     if (key == '2') setView(cam.groupB);
     if (key == '3') setView(cam.groupC);

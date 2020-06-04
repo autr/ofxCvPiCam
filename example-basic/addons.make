@@ -1,2 +1,2 @@
-ofxPiCam
 ofxGui
+ofxPiCam
