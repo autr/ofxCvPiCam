@@ -1,4 +1,0 @@
-ofxGui
-ofxOpenCv
-ofxCv
-ofxCvPiCam
