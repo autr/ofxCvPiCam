@@ -13,7 +13,7 @@ void testApp::onCharacterReceived(SSHKeyListenerEventData& e)
 //--------------------------------------------------------------
 void testApp::setup(){
 	consoleListener.setup(this);
-	consoleListener.startThread(false, false);
+	consoleListener.startThread();
 
     cam.setup(320,240,false);//setup camera (w,h,color = true,gray = false);
     thresh = 127;
