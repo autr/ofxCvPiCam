@@ -29,6 +29,36 @@
 class ofxPiCam
 {
 public:
+
+
+    ofParameterGroup group;
+    ofParameterGroup groupA, groupB, groupC, groupD;
+
+    ofParameter<int> shutterSpeed;
+    ofParameter<int> saturation;
+    ofParameter<int> sharpness;
+    ofParameter<int> contrast;
+    ofParameter<int> brightness;
+
+    ofParameter<int>  ISO;
+    ofParameter<bool> videoStabilise;
+    ofParameter<int>  exposureCompensation;
+    ofParameter<int> exposureMode;
+    ofParameter<int> flickerAvoidMode;
+    ofParameter<int> exposureMeteringMode;
+    ofParameter<int> awbMode;
+
+    ofParameter<int> rotation;
+    ofParameter<bool> flipHorz;
+    ofParameter<bool> flipVert;
+    ofParameter<ofRectangle> roi;
+
+    ofParameter<ofVec2f> awbGains;
+    ofParameter<ofVec2f> colourFX;
+    ofParameter<int> imageFX;
+
+
+
     typedef struct
     {
        int enable;       /// Turn colourFX on or off
@@ -70,109 +100,38 @@ public:
     // ofxCv
     
     void setup(int _w, int _h, bool _color);
-    ofPixels & grab() {
-        newFrame = false;
-        return *image;
-    }
-    MMAL_COMPONENT_T *getCamera(){ return camera; }
+    void close();
 
-    //settings
-    /**
-     * @brief setSaturation
-     * @param saturation (-100,100)
-     * @return
-     */
-    int setSaturation(int saturation);
-    /**
-     * @brief setSharpness
-     * @param sharpness (-100,100)
-     * @return
-     */
-    int setSharpness(int sharpness);
-    /**
-     * @brief setContrast
-     * @param contrast (-100,100)
-     * @return
-     */
-    int setContrast(int contrast);
-    /**
-     * @brief setBrightness
-     * @param brightness (0,100)
-     * @return
-     */
-    int setBrightness(int brightness);
-    /**
-     * @brief setISO
-     * @param ISO (100,800) - default is 300
-     * @return
-     */
-    int setISO(int ISO);
-    /**
-     * @brief setExposureMeteringMode
-     * @param m_mode (0,4)
-     * @return
-     */
-    int setExposureMeteringMode(MMAL_PARAM_EXPOSUREMETERINGMODE_T m_mode);
-    /**
-     * @brief setVideoStabilisation
-     * @param vstabilisation (1 is on, 0 is off)
-     * @return
-     */
-    int setVideoStabilisation(int vstabilisation);
-    /**
-     * @brief setExposureCompensation
-     * @param exp_comp (-10,10)
-     * @return
-     */
-    int setExposureCompensation(int exp_comp);
-    /**
-     * @brief setExposureMode
-     * @param mode (0,13)
-     * @return
-     */
-    int setExposureMode(MMAL_PARAM_EXPOSUREMODE_T mode);
-    /**
-     * @brief setAWBMode
-     * @param awb_mode (0,10)
-     * @return
-     */
-    int setAWBMode(MMAL_PARAM_AWBMODE_T awb_mode);
-    /**
-     * @brief setAWBGains
-     * @param r_gain (0.0,1.0)
-     * @param b_gain (0.0,1.0)
-     * @return
-     */
-    int setAWBGains(float r_gain,float b_gain);
-    /**
-     * @brief setImageFX
-     * @param imageFX (0,23)
-     * @return
-     */
-    int setImageFX(MMAL_PARAM_IMAGEFX_T imageFX);//TODO example
-    int setColourFX(MMAL_PARAM_COLOURFX_T *colourFX);//TODO example
-    /**
-     * @brief setRotation
-     * @param rotation (0,359) try 0,90,180,270
-     * @return
-     */
+    ofPixels & grab() { newFrame = false; return *image; }
 
-    int setRotation(int rotation);
-    /**
-     * @brief setFlips
-     * @param hflip (0,1) treat as bool
-     * @param vflip (0,1) treat as bool
-     * @return
-     */
-    int setFlips(int hflip,int vflip);
-//    int setROI(PARAM_FLOAT_RECT_T rect);
-    int setROI(ofRectangle rect);
-    /**
-     * @brief setShutterSpeed
-     * @param speed (0,330000) in microseconds, 0 is auto
-     * @return
-     */
-    int setShutterSpeed(int speed);
+    // labels...
+
+    string exposureModeLabels[14];
+    string exposureMeteringModeLabels[5];
+    string awbModeLabels[12];
+    string imageFXLabelLabels[24];
+    string drcModeLabels[5];
+    string flickerAvoidModeLabels[5];
+
+    void initLabels();
+
+    // mmal mode calls...
+
+    void initParameters();
+
+    int setImageFX(int & v);
+    int setColourFX(ofVec2f & v);
+    int setAWBGains( ofVec2f & v);
+    int setROI(ofRectangle & rect);
+    int setFlips( bool & b );:setRotation(int & v);
+    int setUInt32(int parameterEnum, int & v);
+    int setInt32(int parameterEnum, int & v);
+    int setRationalInt(int parameterEnum, int & v);
+    int setBoolean(int parameterEnum, bool & b);
+    int setExposureMode(int & v);
+    int setExposureMeteringMode(int & v);
+    int setAWBMode(int & v);
+    int setFlickerAvoidMode(int & v);
 
     int mmal_status_to_int(MMAL_STATUS_T status)
     {
