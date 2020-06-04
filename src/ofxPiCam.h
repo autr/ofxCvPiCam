@@ -51,7 +51,7 @@ public:
     ofParameter<int> rotation;
     ofParameter<bool> flipHorz;
     ofParameter<bool> flipVert;
-    ofParameter<ofRectangle> roi;
+    ofParameter<ofVec4f> roi;
 
     ofParameter<ofVec2f> awbGains;
     ofParameter<ofVec2f> colourFX;
@@ -122,8 +122,9 @@ public:
     int setImageFX(int & v);
     int setColourFX(ofVec2f & v);
     int setAWBGains( ofVec2f & v);
-    int setROI(ofRectangle & rect);
-    int setFlips( bool & b );:setRotation(int & v);
+    int setROI(ofVec4f & rect);
+    int setFlips( bool & b );
+    int setRotation(int & v);
     int setUInt32(int parameterEnum, int & v);
     int setInt32(int parameterEnum, int & v);
     int setRationalInt(int parameterEnum, int & v);

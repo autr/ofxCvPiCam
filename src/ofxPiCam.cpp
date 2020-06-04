@@ -220,7 +220,7 @@ void ofxPiCam::initParameters() {
     groupC.add( rotation.set("rotation", 0, 0, 3));
     groupC.add( flipHorz.set("flipHorz", false));
     groupC.add( flipVert.set("flipVert", false));
-    groupC.add( roi.set("ROI", ofRectangle(0,0,1,1),ofRectangle(0,0,0.01,0.01),ofRectangle(0.99,0.99,1,1) ) );
+    groupC.add( roi.set("ROI", ofVec4f(0,0,1,1),ofVec4f(0,0,0.01,0.01),ofVec4f(0.99,0.99,1,1) ) );
 
     rotation.addListener( this, &ofxPiCam::setRotation);
     flipHorz.addListener( this, &ofxPiCam::setFlips);
@@ -285,16 +285,16 @@ int ofxPiCam::setAWBGains( ofVec2f & v){
     return mmal_status_to_int(mmal_port_parameter_set(camera->control, &param.hdr));
 }
 
-int ofxPiCam::setROI(ofRectangle & rect){
+int ofxPiCam::setROI(ofVec4f & rect){
     MMAL_PARAMETER_INPUT_CROP_T crop = {{MMAL_PARAMETER_INPUT_CROP, sizeof(MMAL_PARAMETER_INPUT_CROP_T)}};
     if(rect.x < 0) rect.x = 0;if(rect.x > 1) rect.x = 1;
     if(rect.y < 0) rect.y = 0;if(rect.y > 1) rect.y = 1;
-    if(rect.width < 0) rect.width = 0;if(rect.width > 1) rect.width = 1;
-    if(rect.height < 0) rect.height = 0;if(rect.height > 1) rect.height = 1;
+    if(rect.z < 0) rect.z = 0;if(rect.z > 1) rect.z = 1;
+    if(rect.w < 0) rect.w = 0;if(rect.w > 1) rect.w = 1;
     crop.rect.x = (65536 * rect.x);
     crop.rect.y = (65536 * rect.y);
-    crop.rect.width = (65536 * rect.width);
-    crop.rect.height = (65536 * rect.height);
+    crop.rect.width = (65536 * rect.z);
+    crop.rect.height = (65536 * rect.w);
     
     return mmal_port_parameter_set(camera->control, &crop.hdr);
 }

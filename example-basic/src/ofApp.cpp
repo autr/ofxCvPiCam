@@ -16,7 +16,7 @@ void ofApp::update(){
             ofLog() << "allocated texture";
     		tex.allocate( frame.getWidth(), frame.getHeight(), GL_RGB);
     	}	
-        tex.loadData( frame.getData() );
+        tex.loadData( frame );
     }
 }
 
@@ -27,13 +27,13 @@ void ofApp::draw(){
     int w = ofGetWidth();
     int h = ofGetHeight();
     int ww = w/2;
-    int hh = (ww/cam.getWidth())*cam.getHeight();
+    int hh = (ww/cam.width)*cam.height;
     img.draw(0,0,ww,hh);
     tex.draw(ww,0,ww,hh);
     if (showGui) gui.draw();
 }
 
-void setView( ofParameterGroup & g ) {
+void ofApp::setView( ofParameterGroup & g ) {
     gui.clear();
     gui.setup( g );
 }
