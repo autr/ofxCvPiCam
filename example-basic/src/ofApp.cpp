@@ -3,35 +3,30 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     
-    cam.setup(320,240,true); 
+    ofSetFrameRate(30);
+    cam.setup(640,480,true); 
     showGui = false;
 
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    if (cam.isFrameNew()) {
-        frame = cam.grab();
-    	if ( !tex.isAllocated() || ( ( tex.getWidth() != frame.getWidth() ) || ( tex.getHeight() != frame.getHeight() ) ) ) {
-            ofLog() << "allocated texture";
-    		tex.allocate( frame.getWidth(), frame.getHeight(), GL_RGB);
+    	if (  tex.getWidth() != cam.width || tex.getHeight() != cam.height ) {
+            ofLog() << "allocated texture???";
+    		tex.allocate( cam.width, cam.height, GL_RGB);
     	}	
-        tex.loadData( frame );
-    }
+        tex.loadData( cam.grab().getData(), cam.width, cam.height, GL_RGB );
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     
     if (cam.isReceiving) {
-        ofImage img;
-        img.setFromPixels( cam.grab() );
         int w = ofGetWidth();
         int h = ofGetHeight();
         int ww = w/2;
         int hh = (ww/cam.width)*cam.height;
-        img.draw(0,0,ww,hh);
-        tex.draw(ww,0,ww,hh);
+        tex.draw(0,0,w,h);
     }
     if (showGui) gui.draw();
 }
@@ -46,7 +41,7 @@ void ofApp::setView( ofParameterGroup & g ) {
 void ofApp::keyPressed  (int key){
     
     if (key == ' ') showGui = !showGui;
-    ofLog() << "KEY IS" << (char)key;
+    ofLog() << "Key pressed: " << (char)key;
     if (key == '1') setView(cam.groupA);
     if (key == '2') setView(cam.groupB);
     if (key == '3') setView(cam.groupC);

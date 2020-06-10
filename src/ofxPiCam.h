@@ -46,6 +46,14 @@ class ofxPiCam
 {
 public:
 
+    ofEventListener saturationListener;
+    ofEventListener sharpnessListener;
+    ofEventListener contrastListener;
+    ofEventListener brightnessListener;
+    ofEventListener shutterSpeedListener;
+    ofEventListener videoStabiliseListener;
+    ofEventListener  exposureCompensationListener;
+    ofEventListener  ISOListener;
 
     ofParameterGroup group;
     ofParameterGroup groupA, groupB, groupC, groupD;
@@ -70,6 +78,7 @@ public:
     ofParameter<ofVec4f> roi;
 
     ofParameter<ofVec2f> awbGains;
+    ofParameter<bool> colourFXEnable;
     ofParameter<ofVec2f> colourFX;
     ofParameter<int> imageFX;
 
@@ -96,6 +105,7 @@ public:
     void setup();
 
     static ofPixels * image;
+    static bool isReceiving;
     
 #ifdef OFXADDON_OFXCV
     static Mat cvImage;
@@ -154,7 +164,6 @@ public:
     }
 #endif
     //*/
-    bool isReceiving = false;
     
 private:
   
@@ -188,6 +197,15 @@ private:
     void setExposureMeteringMode(int & v);
     void setAWBMode(int & v);
     void setFlickerAvoidMode(int & v);
+    void setSaturation( int & v );
+    void setSharpness( int & v );
+    void setContrast( int & v );
+    void setBrightness( int & v );
+    void setShutterSpeed( int & v );
+    void setISO( int & v );
+    void setVideoStabilise( bool & v );
+    void setExposureCompensation( int & v );
+    
 #ifdef TARGET_RASPBERRY_PI
     bool color;
     MMAL_COMPONENT_T *camera;

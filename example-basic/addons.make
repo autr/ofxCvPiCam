@@ -1,2 +1,4 @@
 ofxGui
 ofxPiCam
+ofxVideoRecorder
+ofxPoco
